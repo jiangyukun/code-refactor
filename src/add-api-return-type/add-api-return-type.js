@@ -61,6 +61,8 @@ function parse(code, filePath) {
                 }
             })
             if (serviceUrl) {
+                let interfaceName = findInterfaceName(serviceUrl)
+                console.log(`interfaceName: ${interfaceName}`)
                 if (path.parentPath.value.type == 'VariableDeclarator') {
                     let id = builders.identifier.from({
                         name: path.parentPath.value.id.name,
@@ -102,6 +104,25 @@ function findServiceUrl(filePath, serviceRelativePath, methodName) {
         }
     })
     return pathUrl
+}
+
+function findInterfaceName(url) {
+    let dir = fs.readdirSync(config.interfacesDirection)
+    for (let fileName of dir) {
+        let filePath = config.interfacesDirection + '/' + fileName
+        let stat = fs.statSync(filePath)
+        if (stat && stat.isDirectory()) {
+
+        } else {
+            if (filePath.endsWith('.ts')) {
+                let code = fs.readFileSync(filePath).toString()
+                if (code.indexOf(url) != -1) {
+                    return 'xiix'
+                }
+            }
+        }
+    }
+    return null
 }
 
 findTsFile(config.tsDirection)
