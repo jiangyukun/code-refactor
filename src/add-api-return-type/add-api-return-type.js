@@ -1,8 +1,10 @@
 let fs = require('fs')
 let path = require('path')
 let recast = require('recast')
+let tsParser = require('recast/parsers/typescript')
 
 let config = require('../config')
+let fileUtil = require('../utils/fileUtil')
 
 let builders = recast.types.builders
 
@@ -62,13 +64,14 @@ function parse(code, filePath) {
             })
             if (serviceUrl) {
                 let interfaceName = findInterfaceName(serviceUrl)
-                console.log(`interfaceName: ${interfaceName}`)
-                if (path.parentPath.value.type == 'VariableDeclarator') {
-                    let id = builders.identifier.from({
-                        name: path.parentPath.value.id.name,
-                        typeAnnotation: builders.tsTypeAnnotation(builders.tsTypeReference(builders.identifier('Type')))
-                    })
-                    path.parentPath.replace(builders.variableDeclarator(id, path.value))
+                if (interfaceName) {
+                    if (path.parentPath.value.type == 'VariableDeclarator') {
+                        let id = builders.identifier.from({
+                            name: path.parentPath.value.id.name,
+                            typeAnnotation: builders.tsTypeAnnotation(builders.tsTypeReference(builders.identifier(interfaceName)))
+                        })
+                        path.parentPath.replace(builders.variableDeclarator(id, path.value))
+                    }
                 }
             }
             return false
@@ -77,6 +80,7 @@ function parse(code, filePath) {
     })
     if (typeAdded) {
         // console.log(recast.print(ast).code);
+        fileUtil.writeCodeToFile(filePath, recast.print(ast).code)
     }
 }
 
@@ -117,7 +121,16 @@ function findInterfaceName(url) {
             if (filePath.endsWith('.ts')) {
                 let code = fs.readFileSync(filePath).toString()
                 if (code.indexOf(url) != -1) {
-                    return 'xiix'
+                    let ast = recast.parse(code, {parser: tsParser})
+                    recast.visit(ast, {
+                        visitExportNamedDeclaration(path) {
+                            if (url.indexOf(path.value.comments[0].value) != -1) {
+                                return path.value.declaration.id.name
+                            }
+                            return false
+                        }
+                    })
+                    return 'Todo'
                 }
             }
         }
