@@ -3,7 +3,8 @@ let path = require('path')
 let fs = require('fs')
 let bodyParse = require('body-parser')
 
-let generateType = require('./generate-type')
+
+let generateApiType = require('./generateApiType')
 let {writeCodeToFile} = require("../utils/fileUtil")
 
 const app = express()
@@ -17,54 +18,31 @@ app.all('*', function (req, res, next) {
 
 let apiList = []
 
-app.post('/generate', (req, res) => {
+
+app.post('/generateApiType', (req, res) => {
 
     let url = req.body.url
     let data = req.body.data
-
-    apiList.push({url, data})
-
-    let convertUrl = url
-    if (convertUrl.indexOf('|') != -1) {
-        convertUrl = url.split('|')[0]
-    }
-    let parts = convertUrl.split('/')
-    if (parts[0] == '') {
-        parts.shift()
+    if (apiList.find(item => item.url == url) == undefined) {
+        apiList.push({url, data})
     }
 
-    let interfaceName = parts.reduce((name, item) => {
-        if (/^\d+$/.test(item)) {
-            return name + '_Num'
-        }
-        if (item == 'true' || item == 'false') {
-            return name + '_Bool'
-        }
-        item = item.replace('-', '').replace(':', '')
-        return name + item.replace(item[0], item[0].toUpperCase())
-    }, '') + '_Type'
+    generateApiType(url, data)
 
-    console.log(interfaceName)
+    res.send('ok')
+})
 
-    let interfaceTxt = generateType(data, interfaceName)
-    if (interfaceTxt) {
-        interfaceTxt = `// ${url} \nexport ` + interfaceTxt
+app.post('/generateApiTypes', (req, res) => {
+    let list = req.body.list
 
-        let interfacePath = path.join(__dirname, `dist/${parts[0]}.ts`)
-        if (parts[0] == 'models') {
-            interfacePath = path.join(__dirname, `dist/${parts[1]}.ts`)
+    for (let apiData of list) {
+        let url = apiData.url
+        let data = apiData.data
+        if (apiList.find(item => item.url == url) == undefined) {
+            apiList.push({url, data})
         }
 
-        let oldContent = ''
-        if (fs.existsSync(interfacePath)) {
-            oldContent = fs.readFileSync(interfacePath).toString()
-        }
-
-        if (oldContent.indexOf(interfaceName) == -1) {
-            writeCodeToFile(interfacePath, oldContent + '\n\n' + interfaceTxt)
-        } else {
-            console.log(`    重复的interface ${interfaceName}`)
-        }
+        generateApiType(url, data)
     }
     res.send('ok')
 })
