@@ -1,5 +1,6 @@
 let path = require('path')
 let fs = require('fs')
+let Prettier = require('prettier')
 
 let generateType = require('./generate-type')
 let {writeCodeToFile} = require("../utils/fileUtil")
@@ -23,7 +24,7 @@ module.exports = function (url, data) {
         if (item == 'true' || item == 'false') {
             return name + '_Bool'
         }
-        item = item.replace('-', '').replace(':', '')
+        item = item.replace(/-\w/g, item=>item[1].toUpperCase()).replace(':', '')
         return name + item.replace(item[0], item[0].toUpperCase())
     }, '') + '_Type'
 
@@ -44,7 +45,7 @@ module.exports = function (url, data) {
         }
 
         if (oldContent.indexOf(interfaceName) == -1) {
-            writeCodeToFile(interfacePath, oldContent + '\n\n' + interfaceTxt)
+            writeCodeToFile(interfacePath, Prettier.format(oldContent + '\n\n' + interfaceTxt, {parser: 'typescript',printWidth: 150, semi:false}))
         } else {
             console.log(`    重复的interface ${interfaceName}`)
         }
