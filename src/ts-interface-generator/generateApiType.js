@@ -6,8 +6,6 @@ let generateType = require('./generate-type')
 let {writeCodeToFile} = require("../utils/fileUtil")
 
 module.exports = function (url, data) {
-
-
     let convertUrl = url
     if (convertUrl.indexOf('|') != -1) {
         convertUrl = url.split('|')[0]
